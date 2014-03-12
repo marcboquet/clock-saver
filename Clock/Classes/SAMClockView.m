@@ -48,7 +48,7 @@ NSString *const SAMClockLogoDefaultsKey = @"SAMClockLogo";
 
 - (id)initWithFrame:(NSRect)frame isPreview:(BOOL)isPreview {
 	if ((self = [super initWithFrame:frame isPreview:isPreview])) {
-		[self setAnimationTimeInterval:1.0 / 4.0];
+		[self setAnimationTimeInterval:1.0 / 60.0];
 		self.wantsLayer = YES;
 
 		ScreenSaverDefaults *defaults = [ScreenSaverDefaults defaultsForModuleWithName:SAMClockDefaultsModuleName];
@@ -161,7 +161,7 @@ NSString *const SAMClockLogoDefaultsKey = @"SAMClockLogo";
 
 	// Get time components
 	NSDate *date = [NSDate date];
-	NSDateComponents *comps = [[NSCalendar currentCalendar] components:NSDayCalendarUnit | NSHourCalendarUnit | NSMinuteCalendarUnit | NSSecondCalendarUnit fromDate:date];
+	NSDateComponents *comps = [[NSCalendar currentCalendar] components:NSYearCalendarUnit | NSMonthCalendarUnit | NSDayCalendarUnit | NSHourCalendarUnit | NSMinuteCalendarUnit | NSSecondCalendarUnit fromDate:date];
 
 	// Date
 	if (self.drawsDate) {
@@ -217,14 +217,41 @@ NSString *const SAMClockLogoDefaultsKey = @"SAMClockLogo";
 	CGFloat angle = -(twoPi * ((CGFloat)comps.hour + ((CGFloat)comps.minute / 60.0f)) / 12.0f) + angleOffset;
 	[self drawHandWithSize:CGSizeMake(ceilf(width * 0.023125997f), ceilf(width * 0.263955343f)) angle:angle lineCapStyle:NSSquareLineCapStyle];
 
+    
+    NSDate *dateWithoutMilliseconds = [[NSCalendar currentCalendar] dateFromComponents:comps];
+    NSTimeInterval interval = 0;
+    NSTimeInterval p = [date timeIntervalSinceDate:dateWithoutMilliseconds];
+    if(p < 7.5/10.0) {
+        
+    }
+    else if(p < 8/10.0)
+	{
+		interval = ((10*10) * p * p)/(8*8);
+	}
+	else if(p < 9/10.0)
+	{
+		interval = (4356/361.0 * p * p) - (35442/1805.0 * p) + 16061/1805.0;
+	}
+	else
+	{
+		interval = (54/5.0 * p * p) - (513/25.0 * p) + 268/25.0;
+	}
+    //interval = sin(-30 * M_PI_2 * (p + 1)) * pow(2, -100 * p) + 1;
+    
+    
+    
 	// Minutes
 	[handColor setStroke];
-	angle = -(twoPi * (CGFloat)comps.minute / 60.0f) + angleOffset;
+    if (comps.second == 59) {
+        angle = -(twoPi * ((CGFloat)comps.minute + interval) / 60.0f) + angleOffset;
+    } else {
+        angle = -(twoPi * (CGFloat)comps.minute / 60.0f) + angleOffset;
+    }
 	[self drawHandWithSize:CGSizeMake(ceilf(width * 0.014354067f), ceilf(width * 0.391547049f)) angle:angle lineCapStyle:NSSquareLineCapStyle];
 
 	// Seconds
 	[secondsColor set];
-	angle = -(twoPi * (CGFloat)comps.second / 60.0f) + angleOffset;
+	angle = -(twoPi * ((CGFloat)comps.second + interval) / 60.0f) + angleOffset;
 	[self drawHandWithSize:CGSizeMake(ceilf(width * 0.009569378f), ceilf(width * 0.391547049f)) angle:angle lineCapStyle:NSSquareLineCapStyle];
 
 	// Counterweight
